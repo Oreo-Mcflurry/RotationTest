@@ -9,18 +9,28 @@ import SwiftUI
 
 final class RotationPermissionController: ObservableObject {
     static let shared = RotationPermissionController()
-    
-    @Published var isRotationAllowed: Bool = false {
-        didSet {
-            if isRotationAllowed {
-                UIDevice.current.setValue(UIInterfaceOrientation.unknown.rawValue, forKey: "orientation")
-            } else {
-                UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+        
+        @Published var isRotationAllowed: Bool = false {
+            didSet {
+                if isRotationAllowed {
+                    UIDevice.current.setValue(UIInterfaceOrientation.unknown.rawValue, forKey: "orientation")
+                } else {
+                    UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+                }
+                self.updateOrientation()
             }
-            UIViewController.attemptRotationToDeviceOrientation()
+        }
+        
+        private func updateOrientation() {
+            if #available(iOS 16.0, *) {
+                let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+                windowScene?.requestGeometryUpdate(.iOS(interfaceOrientations: isRotationAllowed ? .allButUpsideDown : .portrait))
+                windowScene?.windows.first?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+            } else {
+                UIViewController.attemptRotationToDeviceOrientation()
+            }
         }
     }
-}
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
